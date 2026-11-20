@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 
 @Database(
     entities = [UserEntity::class, WaterLogEntity::class, GoalEntity::class],
-    version = 1,
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -21,7 +21,10 @@ abstract class AppDatabase : RoomDatabase() {
         fun get(context: Context): AppDatabase = INSTANCE ?: synchronized(this) {
             INSTANCE ?: Room.databaseBuilder(
                 context.applicationContext, AppDatabase::class.java, "watertrack.db"
-            ).build().also { INSTANCE = it }
+            )
+                .fallbackToDestructiveMigration()
+                .build()
+                .also { INSTANCE = it }
         }
     }
 }

@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">WaterTrack</string>
+    <string name="tab_dashboard">Accueil</string>
+    <string name="tab_goals">Objectifs</string>
+    <string name="tab_tips">Conseils</string>
+    <string name="tab_account">Compte</string>
+</resources>

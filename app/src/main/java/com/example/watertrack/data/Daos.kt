@@ -39,6 +39,12 @@ interface WaterLogDao {
     )
     suspend fun deleteLast(userId: Long)
 
+    @Query("DELETE FROM water_logs WHERE id = :id")
+    suspend fun deleteById(id: Long)
+
+    @Query("SELECT * FROM water_logs WHERE userId = :userId ORDER BY timestamp DESC")
+    fun allLogs(userId: Long): Flow<List<WaterLogEntity>>
+
     @Query("SELECT COALESCE(SUM(amountMl),0) FROM water_logs WHERE userId = :userId AND timestamp BETWEEN :start AND :end")
     fun totalBetween(userId: Long, start: Long, end: Long): Flow<Int>
 

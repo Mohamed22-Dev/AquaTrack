@@ -25,6 +25,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import java.util.Calendar
 
 private val Navy = Color(0xFF0B2A5B)
@@ -32,72 +33,6 @@ private val BlueDark = Color(0xFF1558C8)
 private val BlueMid = Color(0xFF3B8FF0)
 private val BlueSoft = Color(0xFFE3F0FF)
 private val ScreenBg = Color(0xFFF4F8FF)
-
-private enum class TipCategory(val label: String, val icon: ImageVector) {
-    ALL("Tous", Icons.Filled.Star),
-    HEALTH("Santé", Icons.Filled.Favorite),
-    LIFESTYLE("Lifestyle", Icons.Filled.DirectionsRun),
-    DAILY("Quotidien", Icons.Filled.WbSunny)
-}
-
-private data class Tip(
-    val category: TipCategory,
-    val icon: ImageVector,
-    val title: String,
-    val short: String,
-    val detail: String
-)
-
-private val tips = listOf(
-    Tip(
-        TipCategory.HEALTH, Icons.Filled.Favorite,
-        "Restez en bonne santé",
-        "Boire de l'eau renforce votre système immunitaire.",
-        "Une bonne hydratation aide le corps à éliminer les toxines, protège les reins et soutient les défenses naturelles."
-    ),
-    Tip(
-        TipCategory.LIFESTYLE, Icons.Filled.DirectionsRun,
-        "Pendant le sport",
-        "Hydratez-vous avant, pendant et après l'effort.",
-        "Buvez un verre d'eau avant l'effort, quelques gorgées toutes les 15 à 20 minutes pendant, et rehydratez-vous après."
-    ),
-    Tip(
-        TipCategory.DAILY, Icons.Filled.WbSunny,
-        "Par temps chaud",
-        "Augmentez votre consommation d'eau quand il fait chaud.",
-        "La transpiration augmente avec la chaleur. Pensez à boire même sans soif, surtout en été."
-    ),
-    Tip(
-        TipCategory.DAILY, Icons.Filled.NightsStay,
-        "Avant de dormir",
-        "Un verre d'eau peut prévenir la déshydratation nocturne.",
-        "Un petit verre avant le coucher aide, mais évitez d'en boire trop pour ne pas perturber votre sommeil."
-    ),
-    Tip(
-        TipCategory.HEALTH, Icons.Filled.Restaurant,
-        "Aliments riches en eau",
-        "Fruits et légumes contribuent à votre hydratation.",
-        "Concombre, pastèque, orange et tomate contiennent plus de 85 % d'eau."
-    ),
-    Tip(
-        TipCategory.HEALTH, Icons.Filled.Block,
-        "Évitez les boissons sucrées",
-        "Préférez l'eau aux sodas et jus industriels.",
-        "Les boissons sucrées apportent des calories inutiles. L'eau reste la meilleure boisson au quotidien."
-    ),
-    Tip(
-        TipCategory.LIFESTYLE, Icons.Filled.LocalDrink,
-        "Gardez une bouteille près de vous",
-        "Avoir de l'eau à portée de main aide à boire plus souvent.",
-        "Placez une bouteille sur votre bureau ou dans votre sac pour y penser tout au long de la journée."
-    ),
-    Tip(
-        TipCategory.DAILY, Icons.Filled.Alarm,
-        "Au réveil",
-        "Commencez la journée par un grand verre d'eau.",
-        "Après la nuit, le corps est légèrement déshydraté. Un verre d'eau au réveil relance le métabolisme."
-    )
-)
 
 private val dailyTips = listOf(
     "Buvez un verre d'eau avant chaque repas !" to "Cela aide à la digestion et à mieux absorber les nutriments.",
@@ -107,15 +42,16 @@ private val dailyTips = listOf(
 )
 
 @Composable
-fun TipsScreen() {
+fun TipsScreen(vm: MainViewModel) {
     val context = LocalContext.current
+    val favorites by vm.favorites.collectAsStateWithLifecycle()
     var selected by remember { mutableStateOf(TipCategory.ALL) }
     var openedTip by remember { mutableStateOf<Tip?>(null) }
 
     val dayOfYear = remember { Calendar.getInstance().get(Calendar.DAY_OF_YEAR) }
     val daily = dailyTips[dayOfYear % dailyTips.size]
 
-    val filtered = if (selected == TipCategory.ALL) tips else tips.filter { it.category == selected }
+    val filtered = if (selected == TipCategory.ALL) allTips else allTips.filter { it.category == selected }
 
     Column(
         Modifier
@@ -149,12 +85,10 @@ fun TipsScreen() {
             }
         }
 
-        // Astuce du jour
         DailyTipCard(title = daily.first, text = daily.second)
 
         Spacer(Modifier.height(16.dp))
 
-        // Filtres
         Row(
             Modifier.horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -166,9 +100,13 @@ fun TipsScreen() {
 
         Spacer(Modifier.height(14.dp))
 
-        // Liste des conseils
         filtered.forEach { tip ->
-            TipCard(tip) { openedTip = tip }
+            TipCard(
+                tip = tip,
+                isFavorite = tip.id in favorites,
+                onFavorite = { vm.toggleFavorite(tip.id) },
+                onClick = { openedTip = tip }
+            )
             Spacer(Modifier.height(10.dp))
         }
 
@@ -227,7 +165,7 @@ fun TipsScreen() {
                     shareText(
                         context,
                         "Conseils d'hydratation WaterTrack :\n" +
-                                tips.joinToString("\n") { "- ${it.title} : ${it.short}" }
+                                allTips.joinToString("\n") { "- ${it.title} : ${it.short}" }
                     )
                 }
                 .padding(horizontal = 20.dp, vertical = 16.dp),
@@ -274,7 +212,6 @@ private fun DailyTipCard(title: String, text: String) {
             .clip(RoundedCornerShape(28.dp))
             .background(Brush.linearGradient(listOf(Color(0xFF1558C8), Color(0xFF4AA8FF))))
     ) {
-        // Cercles decoratifs
         Box(
             Modifier
                 .align(Alignment.CenterEnd)
@@ -322,10 +259,9 @@ private fun DailyTipCard(title: String, text: String) {
 
 @Composable
 private fun CategoryChip(cat: TipCategory, selected: Boolean, onClick: () -> Unit) {
-    val shape = RoundedCornerShape(50)
     Row(
         Modifier
-            .clip(shape)
+            .clip(RoundedCornerShape(50))
             .background(if (selected) BlueDark else Color(0xFFE8EEF7))
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 12.dp),
@@ -346,7 +282,12 @@ private fun CategoryChip(cat: TipCategory, selected: Boolean, onClick: () -> Uni
 }
 
 @Composable
-private fun TipCard(tip: Tip, onClick: () -> Unit) {
+private fun TipCard(
+    tip: Tip,
+    isFavorite: Boolean,
+    onFavorite: () -> Unit,
+    onClick: () -> Unit
+) {
     Card(
         shape = RoundedCornerShape(22.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -357,7 +298,7 @@ private fun TipCard(tip: Tip, onClick: () -> Unit) {
             .clickable(onClick = onClick)
     ) {
         Row(
-            Modifier.padding(14.dp),
+            Modifier.padding(start = 14.dp, top = 14.dp, bottom = 14.dp, end = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
@@ -375,15 +316,12 @@ private fun TipCard(tip: Tip, onClick: () -> Unit) {
                 Spacer(Modifier.height(2.dp))
                 Text(tip.short, fontSize = 14.sp, color = Color.Gray)
             }
-            Spacer(Modifier.width(8.dp))
-            Box(
-                Modifier
-                    .size(38.dp)
-                    .clip(CircleShape)
-                    .background(BlueSoft),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(Icons.Filled.ChevronRight, null, tint = BlueDark)
+            IconButton(onClick = onFavorite) {
+                Icon(
+                    if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                    contentDescription = "Favori",
+                    tint = if (isFavorite) Color(0xFFE53935) else BlueDark
+                )
             }
         }
     }

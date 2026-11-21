@@ -35,7 +35,6 @@ fun AppNavGraph() {
 
     NavHost(navController = nav, startDestination = Routes.SPLASH) {
 
-        // 1) Splash
         composable(Routes.SPLASH) {
             SplashScreen(onFinished = {
                 scope.launch {
@@ -53,7 +52,6 @@ fun AppNavGraph() {
             })
         }
 
-        // 2) Onboarding (premier lancement uniquement)
         composable(Routes.ONBOARDING) {
             OnboardingScreen(onFinished = {
                 scope.launch {
@@ -67,7 +65,6 @@ fun AppNavGraph() {
             })
         }
 
-        // 3) Connexion
         composable(Routes.LOGIN) {
             val vm: AuthViewModel = viewModel(factory = AuthViewModelFactory(app))
             LoginScreen(
@@ -81,7 +78,6 @@ fun AppNavGraph() {
             )
         }
 
-        // 4) Creation de compte
         composable(Routes.REGISTER) {
             val vm: AuthViewModel = viewModel(factory = AuthViewModelFactory(app))
             RegisterScreen(
@@ -95,7 +91,12 @@ fun AppNavGraph() {
             )
         }
 
-        // 5) Ecran principal (onglets)
-        composable(Routes.MAIN) { MainScreen() }
+        composable(Routes.MAIN) {
+            MainScreen(onLogout = {
+                nav.navigate(Routes.LOGIN) {
+                    popUpTo(Routes.MAIN) { inclusive = true }
+                }
+            })
+        }
     }
 }

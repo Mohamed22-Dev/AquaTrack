@@ -6,6 +6,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -65,29 +66,43 @@ private val BarTop = Color(0xFF7FD0FB)
 private val BarBottom = Color(0xFF5FB4F8)
 private val AddButtonColor = Color(0xFF0B4DA8)
 
+/** Sous-pages du compte (le bouton "Compte" reste allume) */
+object AccountRoutes {
+    const val STATS = "stats"
+    const val HISTORY = "history"
+    const val FAVORITES = "favorites"
+    const val ABOUT = "about"
+    const val SETTINGS = "settings"
+
+    val all = setOf(STATS, HISTORY, FAVORITES, ABOUT, SETTINGS)
+}
+
 @Composable
-fun MainScreen() {
+fun MainScreen(onLogout: () -> Unit) {
     val app = LocalContext.current.applicationContext as WaterTrackApp
     val vm: MainViewModel = viewModel(factory = MainViewModelFactory(app))
 
     val tabsNav = rememberNavController()
     val backStack by tabsNav.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
+    val highlightRoute =
+        if (currentRoute in AccountRoutes.all) Tab.Account.route else currentRoute
 
     val cup by vm.cupMl.collectAsState()
     var showAdd by remember { mutableStateOf(false) }
 
+    fun goTab(tab: Tab) {
+        tabsNav.navigate(tab.route) {
+            popUpTo(tabsNav.graph.findStartDestination().id)
+            launchSingleTop = true
+        }
+    }
+
     Scaffold(
         bottomBar = {
             FancyBottomBar(
-                currentRoute = currentRoute,
-                onTab = { tab ->
-                    tabsNav.navigate(tab.route) {
-                        popUpTo(tabsNav.graph.findStartDestination().id) { saveState = true }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                },
+                currentRoute = highlightRoute,
+                onTab = { tab -> goTab(tab) },
                 onAdd = { showAdd = true }
             )
         }
@@ -99,8 +114,34 @@ fun MainScreen() {
         ) {
             composable(Tab.Dashboard.route) { DashboardScreen(vm) }
             composable(Tab.Goals.route) { GoalsScreen(vm) }
-            composable(Tab.Tips.route) { TipsScreen() }
-            composable(Tab.Account.route) { PlaceholderScreen("Mon compte") }
+            composable(Tab.Tips.route) { TipsScreen(vm) }
+            composable(Tab.Account.route) {
+                AccountScreen(
+                    vm = vm,
+                    onStats = { tabsNav.navigate(AccountRoutes.STATS) },
+                    onGoals = { goTab(Tab.Goals) },
+                    onHistory = { tabsNav.navigate(AccountRoutes.HISTORY) },
+                    onFavorites = { tabsNav.navigate(AccountRoutes.FAVORITES) },
+                    onAbout = { tabsNav.navigate(AccountRoutes.ABOUT) },
+                    onSettings = { tabsNav.navigate(AccountRoutes.SETTINGS) },
+                    onLogout = onLogout
+                )
+            }
+            composable(AccountRoutes.STATS) {
+                StatsScreen(vm) { tabsNav.popBackStack() }
+            }
+            composable(AccountRoutes.HISTORY) {
+                HistoryScreen(vm) { tabsNav.popBackStack() }
+            }
+            composable(AccountRoutes.FAVORITES) {
+                FavoritesScreen(vm) { tabsNav.popBackStack() }
+            }
+            composable(AccountRoutes.ABOUT) {
+                AboutScreen { tabsNav.popBackStack() }
+            }
+            composable(AccountRoutes.SETTINGS) {
+                SettingsScreen(vm, onBack = { tabsNav.popBackStack() }, onLogout = onLogout)
+            }
         }
     }
 
@@ -168,7 +209,6 @@ private fun FancyBottomBar(
             .padding(bottom = 8.dp)
             .height(102.dp)
     ) {
-        // Barre
         Row(
             Modifier
                 .align(Alignment.BottomCenter)
@@ -179,12 +219,11 @@ private fun FancyBottomBar(
         ) {
             BarItem(Tab.Dashboard, currentRoute == Tab.Dashboard.route, { onTab(Tab.Dashboard) }, Modifier.weight(1f))
             BarItem(Tab.Goals, currentRoute == Tab.Goals.route, { onTab(Tab.Goals) }, Modifier.weight(1f))
-            Spacer(Modifier.weight(1f)) // place du bouton central
+            Spacer(Modifier.weight(1f))
             BarItem(Tab.Tips, currentRoute == Tab.Tips.route, { onTab(Tab.Tips) }, Modifier.weight(1f))
             BarItem(Tab.Account, currentRoute == Tab.Account.route, { onTab(Tab.Account) }, Modifier.weight(1f))
         }
 
-        // Bouton central flottant
         Box(
             Modifier
                 .align(Alignment.TopCenter)
@@ -269,7 +308,7 @@ private fun AddWaterDialog(cup: Int, onDismiss: () -> Unit, onAdd: (Int) -> Unit
                         FilledTonalButton(
                             onClick = { onAdd(ml) },
                             modifier = Modifier.weight(1f),
-                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp)
+                            contentPadding = PaddingValues(horizontal = 4.dp)
                         ) { Text("+$ml ml", fontSize = 13.sp) }
                     }
                 }

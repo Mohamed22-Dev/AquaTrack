@@ -8,7 +8,6 @@ import java.io.File
 
 object ImageUtils {
 
-    /** Charge une image en reduisant sa taille pour economiser la memoire */
     fun decodeSampled(context: Context, uri: Uri, maxSize: Int): Bitmap? {
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         context.contentResolver.openInputStream(uri)?.use {
@@ -24,10 +23,12 @@ object ImageUtils {
         }
     }
 
-    /** Copie la photo choisie dans le stockage prive de l'application */
+    /** Enregistre la photo avec un nom unique (pour que l'ecran se mette a jour) */
     fun saveProfilePhoto(context: Context, uri: Uri, userId: Long): String? {
         val bitmap = decodeSampled(context, uri, 512) ?: return null
-        val file = File(context.filesDir, "profile_$userId.jpg")
+        context.filesDir.listFiles { f -> f.name.startsWith("profile_${userId}_") }
+            ?.forEach { it.delete() }
+        val file = File(context.filesDir, "profile_${userId}_${System.currentTimeMillis()}.jpg")
         file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.JPEG, 88, it) }
         return file.absolutePath
     }

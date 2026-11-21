@@ -44,7 +44,6 @@ class Repository(private val db: AppDatabase) {
         return AuthResult.Success(id)
     }
 
-    /** identifier = email ou numero de telephone */
     suspend fun login(identifier: String, password: String): AuthResult {
         val user = if (identifier.contains("@")) {
             db.userDao().getByEmail(identifier)
@@ -68,18 +67,29 @@ class Repository(private val db: AppDatabase) {
         db.userDao().update(user.copy(photoPath = path))
     }
 
+    suspend fun setNotifications(userId: Long, enabled: Boolean) {
+        val user = db.userDao().getById(userId) ?: return
+        db.userDao().update(user.copy(notificationsEnabled = enabled))
+    }
+
     // ---- Water ----
     suspend fun addWater(userId: Long, amountMl: Int) = db.waterLogDao().insert(
         WaterLogEntity(userId = userId, amountMl = amountMl, timestamp = System.currentTimeMillis())
     )
 
     suspend fun undoLast(userId: Long) = db.waterLogDao().deleteLast(userId)
+    suspend fun deleteLog(id: Long) = db.waterLogDao().deleteById(id)
+
+    fun allLogs(userId: Long) = db.waterLogDao().allLogs(userId)
 
     fun todayTotal(userId: Long) =
         db.waterLogDao().totalBetween(userId, startOfDay(0), endOfDay())
 
     fun weekTotals(userId: Long) =
         db.waterLogDao().dailyTotals(userId, startOfDay(-6))
+
+    fun allTotals(userId: Long) =
+        db.waterLogDao().dailyTotals(userId, 0L)
 
     // ---- Goals ----
     fun goalHistory(userId: Long) = db.goalDao().history(userId)

@@ -51,10 +51,11 @@ fun LoginScreen(vm: AuthViewModel, onLoggedIn: () -> Unit, onRegister: () -> Uni
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        AppLogo(Modifier.size(160.dp))
-        Spacer(Modifier.height(8.dp))
+        // شعار AquaTrack الجديد
+        AppLogo(Modifier.size(180.dp))
+        Spacer(Modifier.height(12.dp))
         Text("Connexion", fontSize = 28.sp, fontWeight = FontWeight.Bold)
-        Text("Accédez à votre compte")
+        Text("Accédez à votre compte", color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(24.dp))
 
         OutlinedTextField(

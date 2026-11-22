@@ -10,8 +10,8 @@ import com.example.watertrack.R
 @Composable
 fun AppLogo(modifier: Modifier = Modifier) {
     Image(
-        painter = painterResource(R.drawable.logo_watertrack),
-        contentDescription = "WaterTrack",
+        painter = painterResource(R.drawable.logo_aquatrack),
+        contentDescription = "AquaTrack Logo",
         modifier = modifier,
         contentScale = ContentScale.Fit
     )

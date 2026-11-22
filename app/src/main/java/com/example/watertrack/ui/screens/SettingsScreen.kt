@@ -8,6 +8,7 @@ import android.net.Uri
 import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -55,11 +56,22 @@ fun SettingsScreen(vm: MainViewModel, onBack: () -> Unit, onLogout: () -> Unit) 
     var showHours by remember { mutableStateOf(false) }
     var showLanguage by remember { mutableStateOf(false) }
     var showPassword by remember { mutableStateOf(false) }
+    var showEmailDialog by remember { mutableStateOf(false) }
     var showPrivacy by remember { mutableStateOf(false) }
     var showTerms by remember { mutableStateOf(false) }
     var showAbout by remember { mutableStateOf(false) }
     var showLogout by remember { mutableStateOf(false) }
     var pendingTest by remember { mutableStateOf(false) }
+
+    val photoLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickVisualMedia()
+    ) { uri -> if (uri != null) vm.setPhoto(uri) }
+
+    fun pickPhoto() {
+        photoLauncher.launch(
+            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+        )
+    }
 
     fun hasPermission(): Boolean =
         Build.VERSION.SDK_INT < 33 ||
@@ -120,10 +132,6 @@ fun SettingsScreen(vm: MainViewModel, onBack: () -> Unit, onLogout: () -> Unit) 
                         fontSize = 13.sp, color = AppTextGray
                     )
                 }
-                Icon(
-                    Icons.Filled.Settings, null,
-                    tint = AppBlueDark, modifier = Modifier.size(64.dp)
-                )
             }
         }
 
@@ -134,37 +142,22 @@ fun SettingsScreen(vm: MainViewModel, onBack: () -> Unit, onLogout: () -> Unit) 
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // ---- Carte application ----
+            // ---- Carte Profil et Photo ----
+            SectionTitle(Icons.Filled.Person, "Mon compte")
             SettingsCard {
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .clickable { showAbout = true }
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        Modifier
-                            .size(64.dp)
-                            .clip(CircleShape)
-                            .background(Brush.linearGradient(listOf(AppBlueDark, AppNavy))),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            Icons.Filled.WaterDrop, null,
-                            tint = Color.White, modifier = Modifier.size(34.dp)
-                        )
-                    }
-                    Spacer(Modifier.width(16.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text(
-                            "WaterTrack",
-                            fontSize = 22.sp, fontWeight = FontWeight.Bold, color = AppNavy
-                        )
-                        Text("Version 1.0.0", color = AppTextGray)
-                    }
-                    Icon(Icons.Filled.ChevronRight, null, tint = AppBlueDark)
-                }
+                SettingRow(
+                    icon = Icons.Filled.AccountCircle,
+                    title = "Changer la photo de profil",
+                    subtitle = "Modifier votre photo d'illustration",
+                    onClick = { pickPhoto() }
+                )
+                RowDivider()
+                SettingRow(
+                    icon = Icons.Filled.Email,
+                    title = "Changer l'adresse e-mail",
+                    subtitle = user?.email?.ifEmpty { "Ajouter une adresse e-mail" } ?: "",
+                    onClick = { showEmailDialog = true }
+                )
             }
 
             // ---- Notifications ----
@@ -229,7 +222,10 @@ fun SettingsScreen(vm: MainViewModel, onBack: () -> Unit, onLogout: () -> Unit) 
                     title = "Mode sombre",
                     subtitle = "Activer le mode sombre",
                     trailing = {
-                        Switch(checked = dark, onCheckedChange = { sv.setDarkMode(it) })
+                        Switch(
+                            checked = dark,
+                            onCheckedChange = { sv.setDarkMode(it) }
+                        )
                     }
                 )
             }
@@ -322,6 +318,23 @@ fun SettingsScreen(vm: MainViewModel, onBack: () -> Unit, onLogout: () -> Unit) 
         PasswordDialog(sv = sv, onDismiss = { showPassword = false })
     }
 
+    if (showEmailDialog) {
+        EmailDialog(
+            currentEmail = user?.email ?: "",
+            onDismiss = { showEmailDialog = false },
+            onSave = { newEmail ->
+                vm.changeEmail(newEmail) { ok ->
+                    if (ok) {
+                        Toast.makeText(context, "Adresse e-mail mise à jour", Toast.LENGTH_SHORT).show()
+                        showEmailDialog = false
+                    } else {
+                        Toast.makeText(context, "Cette adresse e-mail est déjà utilisée", Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+        )
+    }
+
     if (showPrivacy) {
         InfoDialog(
             "Politique de confidentialité",
@@ -384,7 +397,7 @@ private fun SectionTitle(icon: ImageVector, text: String) {
 private fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
     Card(
         shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -597,6 +610,42 @@ private fun PasswordDialog(sv: SettingsViewModel, onDismiss: () -> Unit) {
                     }
                 }
             }) { Text("Modifier") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Annuler") } }
+    )
+}
+
+@Composable
+private fun EmailDialog(currentEmail: String, onDismiss: () -> Unit, onSave: (String) -> Unit) {
+    var email by remember { mutableStateOf(currentEmail) }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Changer l'adresse e-mail") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { email = it.trim() },
+                    label = { Text("Nouvelle adresse e-mail") },
+                    singleLine = true,
+                    isError = error != null
+                )
+                if (error != null) {
+                    Text(error!!, color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                if (email.isBlank() || !email.contains("@")) {
+                    error = "Adresse e-mail invalide"
+                } else {
+                    error = null
+                    onSave(email)
+                }
+            }) { Text("Enregistrer") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Annuler") } }
     )

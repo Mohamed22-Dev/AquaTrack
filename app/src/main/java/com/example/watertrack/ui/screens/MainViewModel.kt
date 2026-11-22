@@ -130,7 +130,7 @@ class MainViewModel(
         }
     }
 
-    // ---- Profil ----
+    // ---- Profil & Compte ----
     fun setPhoto(uri: Uri) {
         viewModelScope.launch {
             val id = userId.first()
@@ -139,6 +139,18 @@ class MainViewModel(
                 ImageUtils.saveProfilePhoto(app, uri, id)
             }
             if (path != null) repo.setPhoto(id, path)
+        }
+    }
+
+    fun changeEmail(newEmail: String, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val id = userId.first()
+            if (id == -1L) {
+                onResult(false)
+                return@launch
+            }
+            val success = repo.updateEmail(id, newEmail)
+            onResult(success)
         }
     }
 

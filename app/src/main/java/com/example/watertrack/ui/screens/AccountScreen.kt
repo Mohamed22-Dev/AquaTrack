@@ -1,9 +1,5 @@
 package com.example.watertrack.ui.screens
 
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -20,11 +16,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -33,11 +27,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.watertrack.R
 import com.example.watertrack.util.ImageUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlin.math.PI
-import kotlin.math.sin
 
 @Composable
 fun AccountScreen(
@@ -59,16 +52,6 @@ fun AccountScreen(
     var showPremium by remember { mutableStateOf(false) }
     var showLogout by remember { mutableStateOf(false) }
 
-    val photoLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.PickVisualMedia()
-    ) { uri -> if (uri != null) vm.setPhoto(uri) }
-
-    fun pickPhoto() {
-        photoLauncher.launch(
-            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-        )
-    }
-
     val photo = rememberFileBitmap(user?.photoPath)
     val progress = if (goal > 0) ((today * 100f) / goal).toInt().coerceIn(0, 100) else 0
     val displayName = user?.let { u ->
@@ -83,51 +66,14 @@ fun AccountScreen(
             .background(AppScreenBg)
             .verticalScroll(rememberScrollState())
     ) {
-        // ---- En-tete avec vagues, photo et reglages ----
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .height(235.dp)
+        // ---- الهيدر المائي مع صورة Profil ----
+        WaterWaveHeader(
+            drawableRes = R.drawable.profil,
+            height = 235.dp,
+            showSettingsButton = true,
+            onSettingsClick = onSettings
         ) {
-            Canvas(Modifier.fillMaxSize()) {
-                val w = size.width
-                val h = size.height
-                drawRect(Brush.verticalGradient(listOf(Color(0xFFBFE0FF), AppScreenBg)))
-
-                fun wave(top: Float, amp: Float, shift: Float, color: Color) {
-                    val p = Path().apply {
-                        moveTo(0f, 0f)
-                        lineTo(0f, top)
-                        var x = 0f
-                        while (x <= w) {
-                            lineTo(x, top + amp * sin(x / w * 2f * PI.toFloat() + shift))
-                            x += 6f
-                        }
-                        lineTo(w, 0f)
-                        close()
-                    }
-                    drawPath(p, color)
-                }
-                wave(h * 0.52f, 14.dp.toPx(), 0f, Color(0xFF8CC8FF).copy(alpha = 0.55f))
-                wave(h * 0.40f, 12.dp.toPx(), 2f, Color(0xFF5AAEF5).copy(alpha = 0.45f))
-            }
-
-            // Bouton reglages
-            Box(
-                Modifier
-                    .align(Alignment.TopEnd)
-                    .statusBarsPadding()
-                    .padding(12.dp)
-                    .size(46.dp)
-                    .shadow(4.dp, CircleShape)
-                    .background(Color.White, CircleShape)
-                    .clickable(onClick = onSettings),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(Icons.Filled.Settings, "Paramètres", tint = AppBlueDark)
-            }
-
-            // Photo
+            // Photo (عرض الصورة دون قابليتها للنقر)
             Box(
                 Modifier
                     .align(Alignment.BottomCenter)
@@ -142,8 +88,7 @@ fun AccountScreen(
                         .border(3.dp, AppBlueMid, CircleShape)
                         .padding(6.dp)
                         .clip(CircleShape)
-                        .background(AppBlueMid.copy(alpha = 0.15f))
-                        .clickable { pickPhoto() },
+                        .background(AppBlueMid.copy(alpha = 0.15f)),
                     contentAlignment = Alignment.Center
                 ) {
                     if (photo != null) {
@@ -159,20 +104,6 @@ fun AccountScreen(
                             tint = AppBlueMid, modifier = Modifier.size(70.dp)
                         )
                     }
-                }
-                Box(
-                    Modifier
-                        .align(Alignment.BottomEnd)
-                        .size(40.dp)
-                        .shadow(4.dp, CircleShape)
-                        .background(Color.White, CircleShape)
-                        .clickable { pickPhoto() },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Filled.Edit, "Changer la photo",
-                        tint = AppBlueDark, modifier = Modifier.size(20.dp)
-                    )
                 }
             }
         }
@@ -206,7 +137,7 @@ fun AccountScreen(
         // ---- Statistiques rapides ----
         Card(
             shape = RoundedCornerShape(26.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
             modifier = Modifier
                 .fillMaxWidth()
@@ -360,7 +291,7 @@ private fun MenuCard(
 ) {
     Card(
         shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         modifier = Modifier
             .fillMaxWidth()

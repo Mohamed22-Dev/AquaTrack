@@ -8,7 +8,6 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -39,8 +38,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.watertrack.R
 import com.example.watertrack.data.GoalEntity
-import com.example.watertrack.ui.theme.BlueGradient
 import com.example.watertrack.ui.theme.BluePrimary
 import com.example.watertrack.ui.theme.GreenAccent
 import com.example.watertrack.ui.theme.RedError
@@ -73,17 +72,12 @@ fun GoalsScreen(vm: MainViewModel) {
     val todayKey = remember { SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date()) }
 
     Column(Modifier.fillMaxSize()) {
-        // En-tete centre
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .background(BlueGradient)
-                .statusBarsPadding()
-                .padding(vertical = 16.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text("Objectifs", color = White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-        }
+        // الهيدر المائي باستخدام الصورة objectifs
+        WaterWaveHeader(
+            drawableRes = R.drawable.objectifs,
+            height = 140.dp,
+            title = "Objectifs"
+        )
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),

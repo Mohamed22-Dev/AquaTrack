@@ -1,6 +1,7 @@
 package com.example.watertrack.ui.screens
 
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
@@ -16,12 +17,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -41,8 +42,8 @@ import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -58,30 +59,21 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.watertrack.ui.theme.BlueGradient
+import com.example.watertrack.R
 import com.example.watertrack.ui.theme.BlueLight
 import com.example.watertrack.ui.theme.BluePrimary
-import com.example.watertrack.ui.theme.GreenAccent
-import com.example.watertrack.ui.theme.White
-import com.github.mikephil.charting.charts.BarChart
-import com.github.mikephil.charting.components.XAxis
-import com.github.mikephil.charting.data.BarData
-import com.github.mikephil.charting.data.BarDataSet
-import com.github.mikephil.charting.data.BarEntry
-import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
 import kotlin.math.PI
 import kotlin.math.sin
 
@@ -102,7 +94,10 @@ private val quickItems = listOf(
 )
 
 @Composable
-fun DashboardScreen(vm: MainViewModel) {
+fun DashboardScreen(
+    vm: MainViewModel,
+    onNavigateToReminders: () -> Unit = {}
+) {
     val today by vm.todayMl.collectAsStateWithLifecycle()
     val goal by vm.goalMl.collectAsStateWithLifecycle()
     val week by vm.weekData.collectAsStateWithLifecycle()
@@ -118,22 +113,15 @@ fun DashboardScreen(vm: MainViewModel) {
 
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
-            // En-tete centre
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .background(BlueGradient)
-                    .statusBarsPadding()
-                    .padding(vertical = 16.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    "Tableau de bord",
-                    color = White,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
+            // الهيدر المائي مع أيقونة المنبه للتذكيرات (Rappels)
+            WaterWaveHeader(
+                drawableRes = R.drawable.dashbord,
+                height = 150.dp,
+                title = "Tableau de bord",
+                subtitle = "Tableau du 21 novembre",
+                showNotificationButton = true,
+                onNotificationClick = onNavigateToReminders
+            )
 
             Column(
                 Modifier
@@ -172,7 +160,7 @@ fun DashboardScreen(vm: MainViewModel) {
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Ajout rapide", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Text("Ajout rapide", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = AppNavy)
                     OutlinedButton(
                         onClick = { showDialog = true },
                         shape = RoundedCornerShape(50),
@@ -208,6 +196,7 @@ fun DashboardScreen(vm: MainViewModel) {
                     "Vos statistiques",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
+                    color = AppNavy,
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(Modifier.height(12.dp))
@@ -231,19 +220,11 @@ fun DashboardScreen(vm: MainViewModel) {
 
                 Spacer(Modifier.height(24.dp))
 
-                Text(
-                    "Consommation de la semaine",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(Modifier.height(8.dp))
                 WeekChart(week)
 
                 Spacer(Modifier.height(90.dp))
             }
         }
-
     }
 
     if (showDialog) {
@@ -285,7 +266,6 @@ private fun WaterRing(today: Int, goal: Int, progress: Float) {
             val topLeft = Offset(center.x - radius, center.y - radius)
             val arcSize = Size(radius * 2, radius * 2)
 
-            // Eau a l'interieur du cercle
             val innerR = radius - strokeW / 2f
             val circle = Path().apply { addOval(Rect(center, innerR)) }
             val level = center.y + innerR - (innerR * 2f) * animated
@@ -307,14 +287,12 @@ private fun WaterRing(today: Int, goal: Int, progress: Float) {
                 drawPath(wave, color = BlueLight.copy(alpha = 0.55f))
             }
 
-            // Piste grise
             drawArc(
                 color = Color(0xFFE3E3E3),
                 startAngle = 0f, sweepAngle = 360f, useCenter = false,
                 topLeft = topLeft, size = arcSize,
                 style = Stroke(strokeW)
             )
-            // Progression
             drawArc(
                 color = BluePrimary,
                 startAngle = -90f, sweepAngle = 360f * animated, useCenter = false,
@@ -325,15 +303,15 @@ private fun WaterRing(today: Int, goal: Int, progress: Float) {
 
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Row(verticalAlignment = Alignment.Bottom) {
-                Text(today.toString(), fontSize = 46.sp, fontWeight = FontWeight.Bold)
+                Text(today.toString(), fontSize = 46.sp, fontWeight = FontWeight.Bold, color = AppNavy)
                 Text(
                     " ml",
                     fontSize = 16.sp,
-                    color = Color.Gray,
+                    color = AppTextGray,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
             }
-            Text("sur $goal ml", fontSize = 16.sp, color = Color.DarkGray)
+            Text("sur $goal ml", fontSize = 16.sp, color = AppTextGray)
             Text(
                 "${(progress * 100).toInt()}%",
                 fontSize = 15.sp,
@@ -350,7 +328,7 @@ private fun QuickAddCard(item: QuickItem, modifier: Modifier, onClick: () -> Uni
     Card(
         shape = shape,
         colors = CardDefaults.cardColors(
-            containerColor = if (item.highlight) BlueLight.copy(alpha = 0.3f) else White
+            containerColor = if (item.highlight) BlueLight.copy(alpha = 0.25f) else MaterialTheme.colorScheme.surface
         ),
         border = BorderStroke(
             1.dp,
@@ -381,8 +359,8 @@ private fun QuickAddCard(item: QuickItem, modifier: Modifier, onClick: () -> Uni
             }
             Spacer(Modifier.width(10.dp))
             Column {
-                Text("+${item.ml} ml", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                Text(item.label, fontSize = 12.sp, color = Color.Gray)
+                Text("+${item.ml} ml", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = AppNavy)
+                Text(item.label, fontSize = 12.sp, color = AppTextGray)
             }
         }
     }
@@ -398,7 +376,7 @@ private fun StatCard(
 ) {
     Card(
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(1.dp, Color(0xFFE6E6E6)),
         modifier = modifier
     ) {
@@ -419,54 +397,122 @@ private fun StatCard(
             }
             Spacer(Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.Bottom) {
-                Text(value, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                Text(value, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = AppNavy)
                 Text(
                     " L",
                     fontSize = 12.sp,
-                    color = Color.Gray,
+                    color = AppTextGray,
                     modifier = Modifier.padding(bottom = 3.dp)
                 )
             }
-            Text(label, fontSize = 12.sp, color = Color.Gray)
+            Text(label, fontSize = 12.sp, color = AppTextGray)
         }
     }
 }
 
+/** Modern Jetpack Compose native weekly intake chart */
 @Composable
 private fun WeekChart(data: List<Pair<String, Float>>) {
-    val blue = BluePrimary.toArgb()
-    val green = GreenAccent.toArgb()
+    val maxValue = (data.maxOfOrNull { it.second } ?: 2.0f).coerceAtLeast(1.5f)
 
-    AndroidView(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(220.dp),
-        factory = { ctx ->
-            BarChart(ctx).apply {
-                description.isEnabled = false
-                legend.isEnabled = false
-                axisRight.isEnabled = false
-                axisLeft.axisMinimum = 0f
-                setTouchEnabled(false)
-                xAxis.position = XAxis.XAxisPosition.BOTTOM
-                xAxis.setDrawGridLines(false)
-                xAxis.granularity = 1f
+    Card(
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, Color(0xFFE8EEF7)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(18.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "Consommation de la semaine",
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = AppNavy
+                )
+                Text(
+                    "7 derniers jours",
+                    fontSize = 12.sp,
+                    color = AppTextGray
+                )
             }
-        },
-        update = { chart ->
-            if (data.isNotEmpty()) {
-                val entries = data.mapIndexed { i, p -> BarEntry(i.toFloat(), p.second) }
-                val set = BarDataSet(entries, "").apply {
-                    colors = List(entries.size) { if (it % 2 == 0) blue else green }
-                    setDrawValues(false)
+
+            Spacer(Modifier.height(20.dp))
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Bottom
+            ) {
+                data.forEach { (dayLabel, amountL) ->
+                    val fraction = (amountL / maxValue).coerceIn(0f, 1f)
+                    val animatedFraction by animateFloatAsState(
+                        targetValue = fraction,
+                        animationSpec = tween(durationMillis = 800, easing = LinearOutSlowInEasing),
+                        label = "barHeight"
+                    )
+
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = if (amountL > 0) "%.1fL".format(amountL) else "",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = BluePrimary,
+                            maxLines = 1
+                        )
+
+                        Spacer(Modifier.height(4.dp))
+
+                        Box(
+                            modifier = Modifier
+                                .width(18.dp)
+                                .weight(1f)
+                                .clip(CircleShape)
+                                .background(Color(0xFFEBF3FE)),
+                            contentAlignment = Alignment.BottomCenter
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .fillMaxHeight(animatedFraction)
+                                    .clip(CircleShape)
+                                    .background(
+                                        brush = Brush.verticalGradient(
+                                            colors = listOf(
+                                                Color(0xFF389BFF),
+                                                Color(0xFF0B5ED7)
+                                            )
+                                        )
+                                    )
+                            )
+                        }
+
+                        Spacer(Modifier.height(8.dp))
+
+                        Text(
+                            text = dayLabel,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = AppTextGray
+                        )
+                    }
                 }
-                chart.xAxis.valueFormatter = IndexAxisValueFormatter(data.map { it.first })
-                chart.data = BarData(set).apply { barWidth = 0.6f }
-                chart.animateY(500)
-                chart.invalidate()
             }
         }
-    )
+    }
 }
 
 @Composable

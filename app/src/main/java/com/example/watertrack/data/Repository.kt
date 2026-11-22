@@ -57,6 +57,18 @@ class Repository(private val db: AppDatabase) {
     fun observeUser(id: Long) = db.userDao().observe(id)
     suspend fun updateUser(user: UserEntity) = db.userDao().update(user)
 
+    suspend fun updateEmail(userId: Long, newEmail: String): Boolean {
+        if (newEmail.isNotEmpty()) {
+            val existing = db.userDao().getByEmail(newEmail)
+            if (existing != null && existing.id != userId) {
+                return false
+            }
+        }
+        val user = db.userDao().getById(userId) ?: return false
+        db.userDao().update(user.copy(email = newEmail))
+        return true
+    }
+
     suspend fun updateDailyGoal(userId: Long, goalMl: Int) {
         val user = db.userDao().getById(userId) ?: return
         db.userDao().update(user.copy(dailyGoalMl = goalMl))

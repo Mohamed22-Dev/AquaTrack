@@ -13,14 +13,12 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.WaterDrop
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -66,15 +64,17 @@ private val BarTop = Color(0xFF7FD0FB)
 private val BarBottom = Color(0xFF5FB4F8)
 private val AddButtonColor = Color(0xFF0B4DA8)
 
-/** Sous-pages du compte (le bouton "Compte" reste allume) */
+/** Sous-pages du compte, rappels & Assistant IA */
 object AccountRoutes {
     const val STATS = "stats"
     const val HISTORY = "history"
     const val FAVORITES = "favorites"
     const val ABOUT = "about"
     const val SETTINGS = "settings"
+    const val REMINDERS = "reminders"
+    const val AI_ASSISTANT = "ai_assistant"
 
-    val all = setOf(STATS, HISTORY, FAVORITES, ABOUT, SETTINGS)
+    val all = setOf(STATS, HISTORY, FAVORITES, ABOUT, SETTINGS, REMINDERS, AI_ASSISTANT)
 }
 
 @Composable
@@ -103,7 +103,7 @@ fun MainScreen(onLogout: () -> Unit) {
             FancyBottomBar(
                 currentRoute = highlightRoute,
                 onTab = { tab -> goTab(tab) },
-                onAdd = { showAdd = true }
+                onAiClick = { tabsNav.navigate(AccountRoutes.AI_ASSISTANT) }
             )
         }
     ) { padding ->
@@ -112,7 +112,12 @@ fun MainScreen(onLogout: () -> Unit) {
             startDestination = Tab.Dashboard.route,
             modifier = Modifier.padding(padding)
         ) {
-            composable(Tab.Dashboard.route) { DashboardScreen(vm) }
+            composable(Tab.Dashboard.route) {
+                DashboardScreen(
+                    vm = vm,
+                    onNavigateToReminders = { tabsNav.navigate(AccountRoutes.REMINDERS) }
+                )
+            }
             composable(Tab.Goals.route) { GoalsScreen(vm) }
             composable(Tab.Tips.route) { TipsScreen(vm) }
             composable(Tab.Account.route) {
@@ -141,6 +146,12 @@ fun MainScreen(onLogout: () -> Unit) {
             }
             composable(AccountRoutes.SETTINGS) {
                 SettingsScreen(vm, onBack = { tabsNav.popBackStack() }, onLogout = onLogout)
+            }
+            composable(AccountRoutes.REMINDERS) {
+                RemindersScreen(vm = vm, onBack = { tabsNav.popBackStack() })
+            }
+            composable(AccountRoutes.AI_ASSISTANT) {
+                AiAssistantScreen(vm = vm, onBack = { tabsNav.popBackStack() })
             }
         }
     }
@@ -195,7 +206,7 @@ private class NotchedBarShape(
 private fun FancyBottomBar(
     currentRoute: String?,
     onTab: (Tab) -> Unit,
-    onAdd: () -> Unit
+    onAiClick: () -> Unit
 ) {
     val barShape = remember {
         NotchedBarShape(corner = 26.dp, notchHalfWidth = 42.dp, notchDepth = 38.dp)
@@ -224,6 +235,7 @@ private fun FancyBottomBar(
             BarItem(Tab.Account, currentRoute == Tab.Account.route, { onTab(Tab.Account) }, Modifier.weight(1f))
         }
 
+        // Floating Action Button Au Centre pour L'Assistant IA AquaBot ✨
         Box(
             Modifier
                 .align(Alignment.TopCenter)
@@ -233,22 +245,14 @@ private fun FancyBottomBar(
                 .padding(5.dp)
                 .clip(CircleShape)
                 .background(AddButtonColor)
-                .clickable(onClick = onAdd),
+                .clickable(onClick = onAiClick),
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                Icons.Filled.WaterDrop,
-                contentDescription = "Ajouter de l'eau",
+                Icons.Filled.AutoAwesome,
+                contentDescription = "AquaBot IA",
                 tint = White,
-                modifier = Modifier.size(30.dp)
-            )
-            Icon(
-                Icons.Filled.Add,
-                contentDescription = null,
-                tint = White,
-                modifier = Modifier
-                    .size(15.dp)
-                    .offset(x = 13.dp, y = 11.dp)
+                modifier = Modifier.size(32.dp)
             )
         }
     }

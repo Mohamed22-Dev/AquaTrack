@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -27,11 +28,20 @@ import androidx.compose.ui.unit.sp
 import com.example.watertrack.ui.theme.BlueGradient
 import com.example.watertrack.ui.theme.White
 
-val AppNavy = Color(0xFF0B2A5B)
+val AppNavy: Color
+    @Composable
+    get() = if (MaterialTheme.colorScheme.background == White || MaterialTheme.colorScheme.background == Color(0xFFF4F8FF)) Color(0xFF0B2A5B) else Color(0xFFEAF2FF)
+
 val AppBlueDark = Color(0xFF0B5ED7)
 val AppBlueMid = Color(0xFF3B8FF0)
-val AppScreenBg = Color(0xFFF4F8FF)
-val AppTextGray = Color(0xFF5A6A85)
+
+val AppScreenBg: Color
+    @Composable
+    get() = MaterialTheme.colorScheme.background
+
+val AppTextGray: Color
+    @Composable
+    get() = if (MaterialTheme.colorScheme.background == White || MaterialTheme.colorScheme.background == Color(0xFFF4F8FF)) Color(0xFF5A6A85) else Color(0xFFA0B2CE)
 
 /** En-tete des sous-pages : fleche retour + titre centre */
 @Composable
